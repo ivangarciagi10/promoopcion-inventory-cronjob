@@ -117,7 +117,7 @@ async function updateProducts() {
             if (activeVariants.length === 0) continue; // Salta productos sin variantes activas
 
             const hasSize = productHasSize(activeVariants);
-            const handle = `${product.nombrePadre} ${product.skuPadre}`.toLowerCase().replace(/\s+/g, '-').replace(/-+$/g, '');
+            const handle = `${product.nombrePadre} ${product.skuPadre}`.trim().toLowerCase().replace(/\s+/g, '-').replace(/-+$/g, '');
             const shopifyProduct = await getProductByHandle(handle);
             console.log(`Producto encontrado por el handle: ${shopifyProduct.title}`);
 
