@@ -1,5 +1,6 @@
 const axios = require('axios');
 require('dotenv').config();
+const { uploadProduct } = require('./uploadProduct');
 
 async function getPromoOpcionProducts() {
     const response = await axios.post(
@@ -112,13 +113,17 @@ async function updateProducts() {
     const products = responseProducts.response;
     for (const product of products) {
         try {
-            // if (product.skuPadre !== 'Z 1090') continue;
+            // if (product.skuPadre !== 'PET 008') continue; // If para pruebas con un producto específico
             const activeVariants = product.hijos.filter(variant => variant.estatus === '1');
             if (activeVariants.length === 0) continue; // Salta productos sin variantes activas
 
             const handle = `${product.nombrePadre} ${product.skuPadre}`.trim().toLowerCase().replace(/[\s/]+/g, '-').replace(/-+$/g, ''); // Reemplaza espacios y diagonales y quita guiones al final
-            const shopifyProduct = await getProductByHandle(handle);
-            console.log(`Producto encontrado: ${shopifyProduct.title}`);
+            let shopifyProduct = await getProductByHandle(handle);
+            if (!shopifyProduct) {
+                const isUploaded = await uploadProduct(product);
+                if (!isUploaded) continue;
+                shopifyProduct = await getProductByHandle(handle);
+            }
             
             const hasSize = productHasSize(activeVariants);
             const shopifyVariants = shopifyProduct.variants.nodes;
@@ -128,7 +133,7 @@ async function updateProducts() {
                 
                 const responseInventory = await getVariantInventory(activeVariant.skuHijo);
                 const variantInventory = responseInventory.Stocks.reduce((acum, item) => acum + item.Stock, 0); // Suma el inventario de todas las ubicaciones
-                console.log(`Variante encontrada: ${variant.title}, Inventario: Prev ${variant.inventoryQuantity} Now ${variantInventory}`);
+                console.log(`Variante encontrada: ${shopifyProduct.title} ${variant.title}, Inventario: Prev ${variant.inventoryQuantity} Now ${variantInventory}`);
 
                 if (variant.inventoryQuantity !== variantInventory) { //Actualiza la variante si el inventario ha cambiado
                     const variantToUpdate = {
@@ -147,7 +152,7 @@ async function updateProducts() {
             }
             // break;
         } catch (error) {
-            console.error(`Error procesando el producto ${product.nombrePadre} ${product.skuPadre}:`, error);
+            console.error(`Error actualizando el producto ${product.nombrePadre} ${product.skuPadre}:`, error);
         }
     }
 }
