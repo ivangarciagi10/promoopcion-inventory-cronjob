@@ -116,19 +116,19 @@ async function updateProducts() {
             const activeVariants = product.hijos.filter(variant => variant.estatus === '1');
             if (activeVariants.length === 0) continue; // Salta productos sin variantes activas
 
-            const hasSize = productHasSize(activeVariants);
-            const handle = `${product.nombrePadre} ${product.skuPadre}`.trim().toLowerCase().replace(/[\s/]+/g, '-').replace(/-+$/g, '');
+            const handle = `${product.nombrePadre} ${product.skuPadre}`.trim().toLowerCase().replace(/[\s/]+/g, '-').replace(/-+$/g, ''); // Reemplaza espacios y diagonales y quita guiones al final
             const shopifyProduct = await getProductByHandle(handle);
-            console.log(`Producto encontrado por el handle: ${shopifyProduct.title}`);
-
+            console.log(`Producto encontrado: ${shopifyProduct.title}`);
+            
+            const hasSize = productHasSize(activeVariants);
             const shopifyVariants = shopifyProduct.variants.nodes;
             for (const activeVariant of activeVariants) {
                 const variantTitle = hasSize ? `${activeVariant.color} / ${activeVariant.talla}` : activeVariant.color;
                 const variant = shopifyVariants.find(v => v.title === variantTitle);
                 
                 const responseInventory = await getVariantInventory(activeVariant.skuHijo);
-                const variantInventory = responseInventory.Stocks.reduce((acum, item) => acum + item.Stock, 0);
-                console.log('Variante encontrada:', variant.title, ` Inventario: Prev ${variant.inventoryQuantity} Now ${variantInventory}`);
+                const variantInventory = responseInventory.Stocks.reduce((acum, item) => acum + item.Stock, 0); // Suma el inventario de todas las ubicaciones
+                console.log(`Variante encontrada: ${variant.title}, Inventario: Prev ${variant.inventoryQuantity} Now ${variantInventory}`);
 
                 if (variant.inventoryQuantity !== variantInventory) { //Actualiza la variante si el inventario ha cambiado
                     const variantToUpdate = {
