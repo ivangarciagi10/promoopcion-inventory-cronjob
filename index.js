@@ -46,6 +46,7 @@ async function getProductByHandle(handle) {
             query: `
                 query {
                     productByHandle(handle: "${handle}") {
+                        id
                         title
                         variants(first: 250) {
                             nodes {
@@ -68,6 +69,31 @@ async function getProductByHandle(handle) {
     );
 
     return response.data.data.productByHandle;
+}
+
+async function deleteProduct(input) {
+    const response = await axios.post(
+        'https://gi-hh-global.myshopify.com/admin/api/2024-07/graphql.json',
+        JSON.stringify({
+            query: `
+                mutation productDelete($input: ProductDeleteInput!) {
+                    productDelete(input: $input) {
+                        deletedProductId
+                    }
+                }
+            `,
+            variables: {
+                input,
+            }
+        }), {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Shopify-Access-Token': process.env.SHOPIFY_TOKEN,
+            }
+        }
+    );
+
+    return response.data.data.productDelete;
 }
 
 async function updateInventory(input) {
@@ -115,12 +141,18 @@ async function updateProducts() {
         try {
             // if (product.skuPadre !== 'PET 008') continue; // If para pruebas con un producto específico
             const activeVariants = product.hijos.filter(variant => variant.estatus === '1');
-            if (activeVariants.length === 0) continue; // Salta productos sin variantes activas
 
             const handle = `${product.nombrePadre} ${product.skuPadre}`.trim().toLowerCase().replace(/[\s/]+/g, '-').replace(/-+$/g, ''); // Reemplaza espacios y diagonales y quita guiones al final
             let shopifyProduct = await getProductByHandle(handle);
+            if (shopifyProduct && activeVariants.length === 0) { // Borra producto subido sin variantes activas
+                const deletedProduct = await deleteProduct({ id: shopifyProduct.id });
+                console.log(`Producto borrado: ${handle} (${deletedProduct.deletedProductId})`);
+                continue;
+            }
             if (!shopifyProduct) {
-                const isUploaded = await uploadProduct(product);
+                if (activeVariants.length === 0) continue; // Salta producto sin variantes activas
+
+                const isUploaded = await uploadProduct(product); // Intenta subir producto
                 if (!isUploaded) continue;
                 shopifyProduct = await getProductByHandle(handle);
             }
