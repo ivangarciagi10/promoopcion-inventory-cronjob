@@ -485,6 +485,8 @@ const categories = {
   'BAR - LICORERAS': 'hogar,bar',
   'COMPLEMENTOS - ACC Y COMPLEMENTOS': 'hogar,accesorios',
   'BOLSAS - BOLSAS ECOLOGICAS': 'ecologicos,bolsas ecologicas,textil,bolsas y morrales',
+  'AGENDAS ZEGNO - SEMANAL': 'oficina,libretas',
+  'AGENDAS ZEGNO - DIARIA': 'oficina,libretas',
   'BEBIDAS - CILINDROS DE PLASTICO': 'bebidas,cilindros',
   'BEBIDAS - CILINDROS DE VIDRIO': 'bebidas,cilindros',
   'TECNOLOGIA - ACCESORIOS PARA SMARTPHONE Y TABLET': 'tecnologia,accesorios',
