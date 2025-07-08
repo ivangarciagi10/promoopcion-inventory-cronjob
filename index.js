@@ -1,6 +1,8 @@
 const axios = require('axios');
 require('dotenv').config();
 const { uploadProduct } = require('./uploadProduct');
+const { getLocationId } = require('./getLocations');
+const { getPublications } = require('./getPublications');
 
 async function getPromoOpcionProducts() {
     const response = await axios.post(
@@ -41,7 +43,7 @@ function productHasSize(variants) {
 
 async function getProductByHandle(handle) {
     const response = await axios.post(
-        'https://gi-hh-global.myshopify.com/admin/api/2024-07/graphql.json',
+        process.env.GRAPHQL_URL,
         JSON.stringify({
             query: `
                 query {
@@ -73,7 +75,7 @@ async function getProductByHandle(handle) {
 
 async function deleteProduct(input) {
     const response = await axios.post(
-        'https://gi-hh-global.myshopify.com/admin/api/2024-07/graphql.json',
+        process.env.GRAPHQL_URL,
         JSON.stringify({
             query: `
                 mutation productDelete($input: ProductDeleteInput!) {
@@ -99,7 +101,7 @@ async function deleteProduct(input) {
 async function updateInventory(input) {
     //Usa esta mutation porque Shopify no permite actualizar inventario por productVariantsBulkUpdate
     const response = await axios.post(
-        'https://gi-hh-global.myshopify.com/admin/api/2024-07/graphql.json',
+        process.env.GRAPHQL_URL,
         JSON.stringify({
             query: `
                 mutation InventorySet($input: InventorySetQuantitiesInput!) {
@@ -136,6 +138,8 @@ async function updateProducts() {
 
     if (!responseProducts.success) return;
 
+    const locationId = await getLocationId();
+    const productPublications = await getPublications();
     const products = responseProducts.response;
     for (const product of products) {
         try {
@@ -152,7 +156,7 @@ async function updateProducts() {
             if (!shopifyProduct) {
                 if (activeVariants.length === 0) continue; // Salta producto sin variantes activas
 
-                const isUploaded = await uploadProduct(product); // Intenta subir producto
+                const isUploaded = await uploadProduct(product, locationId, productPublications); // Intenta subir producto
                 if (!isUploaded) continue;
                 shopifyProduct = await getProductByHandle(handle);
             }
@@ -171,7 +175,7 @@ async function updateProducts() {
                     const variantToUpdate = {
                         quantities: {
                             inventoryItemId: variant.inventoryItem.id, //Usa id de inventario porque usar id de variante o producto no funciona
-                            locationId: 'gid://shopify/Location/69743050958',
+                            locationId,
                             quantity: variantInventory,
                         },
                         name: "available",

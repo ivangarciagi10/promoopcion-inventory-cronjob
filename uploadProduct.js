@@ -633,7 +633,7 @@ function getWeight(package) {
 
 async function uploadShopifyProduct(input, media) {
     const response = await axios.post(
-        'https://gi-hh-global.myshopify.com/admin/api/2024-07/graphql.json',
+        process.env.GRAPHQL_URL,
         JSON.stringify({
             query: `
                 mutation productCreate($input: ProductInput!, $media: [CreateMediaInput!]) {
@@ -672,7 +672,7 @@ async function uploadShopifyProduct(input, media) {
 
 async function uploadVariants(productId, variants) {
     const response = await axios.post(
-        'https://gi-hh-global.myshopify.com/admin/api/2024-07/graphql.json',
+        process.env.GRAPHQL_URL,
         JSON.stringify({
             query: `
                 mutation ProductVariantsCreate($productId: ID!, $strategy: ProductVariantsBulkCreateStrategy, $variants: [ProductVariantsBulkInput!]!) {
@@ -707,7 +707,7 @@ async function uploadVariants(productId, variants) {
 
 async function publishProduct(id, input) {
     const response = await axios.post(
-        'https://gi-hh-global.myshopify.com/admin/api/2024-07/graphql.json',
+        process.env.GRAPHQL_URL,
         JSON.stringify({
             query: `
                 mutation publishablePublish($id: ID!, $input: [PublicationInput!]!) {
@@ -739,7 +739,7 @@ async function publishProduct(id, input) {
     return response.data.data.publishablePublish.publishable;
 }
 
-async function uploadProduct(product) {
+async function uploadProduct(product, locationId, productPublications) {
     try {
         const activeVariants = product.hijos.filter(variant => variant.estatus === '1');
         const hasSize = productHasSize(activeVariants);
@@ -818,7 +818,7 @@ async function uploadProduct(product) {
                 inventoryQuantities: [
                     {
                         availableQuantity: 500,
-                        locationId: 'gid://shopify/Location/69743050958',
+                        locationId,
                     }
                 ],
                 optionValues: [
@@ -835,13 +835,7 @@ async function uploadProduct(product) {
             };
         });
         const variantResponse = await uploadVariants(productId, productVariants);
-        
-        const productPublications = [
-            { publicationId: 'gid://shopify/Publication/108296274126' }, // Online Store
-            { publicationId: 'gid://shopify/Publication/108296339662' }, // Point of Sale
-            { publicationId: 'gid://shopify/Publication/110391820494' }, // Shopify GraphiQL App
-            { publicationId: 'gid://shopify/Publication/112943169742' }, // Google & YouTube
-        ];
+
         const publishResponse = await publishProduct(productId, productPublications);
 
         console.log(`Variantes de ${product.skuPadre} subidas y publicadas en ${publishResponse.availablePublicationsCount.count} canales: ${variantResponse.map(v => v.title).join(', ')}`);

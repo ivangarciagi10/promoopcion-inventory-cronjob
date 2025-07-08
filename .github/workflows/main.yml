@@ -1,30 +1,29 @@
 name: Update Products Cronjob
 
-# This schedule uses cron syntax to run every 10 minutes.
 on:
   schedule:
-    - cron: "0 */4 * * *"  # Triggers every 4 hours at minute 0.
-  workflow_dispatch:     # Enables manual run if needed.
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
 
 jobs:
   update_products:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        store: [HHGLOBAL, GNP]
+
+    env:
+      GRAPHQL_URL: ${{ secrets[ format('GRAPHQL_URL_{0}', matrix.store) ] }}
+      SHOPIFY_TOKEN: ${{ secrets[ format('SHOPIFY_TOKEN_{0}', matrix.store) ] }}
+      USER_PO: ${{ secrets.USER_PO }}
+      PASSWORD_PO: ${{ secrets.PASSWORD_PO }}
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with: { node-version: "18" }
+      - run: npm install
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'  # Or any version you prefer
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Run updateProducts Script
-        env:
-          SHOPIFY_TOKEN: ${{ secrets.SHOPIFY_TOKEN }}
-          USER_PO: ${{ secrets.USER_PO }}
-          PASSWORD_PO: ${{ secrets.PASSWORD_PO }}
-        run: node index.js  # Replace with the actual file name of your script
+      - name: Run update for ${{ matrix.store }}
+        run: node index.js
