@@ -140,7 +140,7 @@ async function updateProducts() {
 
     const locationId = await getLocationId();
     const productPublications = await getPublications();
-    const products = responseProducts.response;
+    const products = responseProducts.response || responseProducts.respusta;
     for (const product of products) {
         try {
             // if (product.skuPadre !== 'PET 008') continue; // If para pruebas con un producto específico
@@ -160,13 +160,13 @@ async function updateProducts() {
                 if (!isUploaded) continue;
                 shopifyProduct = await getProductByHandle(handle);
             }
-            
+
             const hasSize = productHasSize(activeVariants);
             const shopifyVariants = shopifyProduct.variants.nodes;
             for (const activeVariant of activeVariants) {
                 const variantTitle = hasSize ? `${activeVariant.color} / ${activeVariant.talla}` : activeVariant.color;
                 const variant = shopifyVariants.find(v => v.title === variantTitle);
-                
+
                 const responseInventory = await getVariantInventory(activeVariant.skuHijo);
                 const variantInventory = responseInventory.Stocks.reduce((acum, item) => acum + item.Stock, 0); // Suma el inventario de todas las ubicaciones
                 console.log(`Variante encontrada: ${shopifyProduct.title} ${variant.title}, Inventario: Prev ${variant.inventoryQuantity} Now ${variantInventory}`);
